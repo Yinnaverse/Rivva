@@ -98,6 +98,7 @@ export function Lobby({ roomId }: { roomId: string }) {
         if (p.eventType === 'DELETE') { router.replace('/rooms'); return; }
         const next = p.new as DbRoom;
         setRoom(next);
+        if (next.video_id && next.host_id !== user.id) router.push(`/rooms/${roomId}/watch`);
         setTitle((t) => (document.activeElement?.id === 'room-title' ? t : next.name));
         setDescription((d) => (document.activeElement?.id === 'room-desc' ? d : next.description ?? ''));
       })
@@ -207,9 +208,15 @@ export function Lobby({ roomId }: { roomId: string }) {
           <button type="button" className={styles.outline} onClick={copyCode}>{copied ? 'Copied' : 'Copy Code'} <Copy size={24} /></button>
           <button type="button" className={styles.outline} onClick={share}>Share <Share2 size={24} /></button>
         </div>
-        <Button full onClick={() => { /* watch screen arrives in the next phase */ }}>
-          Choose Content &amp; Start watching <Play size={16} fill="currentColor" />
-        </Button>
+        {isHost ? (
+          <Button full href={room.video_id ? `/rooms/${roomId}/watch` : `/rooms/${roomId}/content`}>
+            {room.video_id ? 'Resume watching' : 'Choose Content & Start watching'} <Play size={16} fill="currentColor" />
+          </Button>
+        ) : room.video_id ? (
+          <Button full href={`/rooms/${roomId}/watch`}>Join the movie <Play size={16} fill="currentColor" /></Button>
+        ) : (
+          <p className={styles.muted}>Waiting for the host to choose a movie…</p>
+        )}
       </section>
 
       <section className={styles.card}>

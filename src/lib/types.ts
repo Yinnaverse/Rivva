@@ -7,6 +7,7 @@ export type DbRoom = {
   is_private: boolean;
   status: 'waiting' | 'playing';
   now_playing: string | null;
+  video_id: string | null;
   capacity: number;
   sync_controls: boolean;
   allow_reactions: boolean;
@@ -27,4 +28,27 @@ export type ChatMessage = {
   body: string;
   created_at: string;
   name: string;
+};
+
+export type Video = {
+  id: string;
+  owner_id: string;
+  title: string;
+  source_url: string | null;
+  file_name: string | null;
+  mime_type: string | null;
+  size_bytes: number | null;
+  duration_seconds: number | null;
+  is_shared: boolean;
+  created_at: string;
+};
+
+export type SubtitleRow = { id: string; video_id: string; lang: string; label: string; path: string };
+
+export type Playback = {
+  room_id: string;
+  playing: boolean;
+  position: number;
+  updated_at: string;
+  updated_by: string | null;
 };
