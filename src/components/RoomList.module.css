@@ -1,0 +1,4 @@
+.section { display: flex; flex-direction: column; gap: 12px; margin-top: 24px; }
+.heading { font-size: 24px; font-weight: 500; }
+.empty { color: var(--muted); }
+.error { color: #ff6b7d; }

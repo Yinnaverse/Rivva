@@ -1,0 +1,17 @@
+.form { display: flex; flex-direction: column; gap: 12px; }
+.social {
+  display: block;
+  width: 100%;
+  text-align: center;
+  padding: 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--muted);
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+.guest, .switch { text-align: center; color: var(--muted); }
+.switch a { color: var(--accent); text-decoration: underline; }
+.error { color: #ff6b7d; font-size: 14px; }
+.notice { color: var(--success); font-size: 14px; }
