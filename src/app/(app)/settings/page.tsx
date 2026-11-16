@@ -1,3 +1,5 @@
-export default function Page() {
-  return <h1 style={{ fontSize: 24, fontWeight: 500 }}>Settings</h1>;
+import { SettingsView } from '@/components/settings/SettingsView';
+
+export default function SettingsPage() {
+  return <SettingsView />;
 }

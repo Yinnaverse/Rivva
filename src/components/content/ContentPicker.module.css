@@ -12,7 +12,7 @@
   border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface);
 }
 .tab { flex: 1; padding: 10px 4px; border-radius: var(--radius-sm); font-size: 15px; color: var(--text); white-space: nowrap; }
-.tabOn { background: #fff; color: #0d0d0d; }
+.tabOn { background: var(--text); color: var(--bg); }
 
 .card {
   background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);

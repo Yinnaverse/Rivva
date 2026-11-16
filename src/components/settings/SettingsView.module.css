@@ -1,0 +1,41 @@
+.page { display: flex; flex-direction: column; gap: 12px; padding-top: 8px; }
+.h1 { font-size: 32px; font-weight: 500; }
+.card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+  padding: 16px; display: flex; flex-direction: column; gap: 20px;
+}
+.head h2 { display: flex; align-items: center; gap: 10px; font-size: 20px; font-weight: 500; }
+.head p { color: var(--muted); margin-top: 8px; font-size: 15px; }
+.field { display: flex; flex-direction: column; gap: 10px; }
+.field label { font-size: 18px; font-weight: 500; }
+.input {
+  width: 100%; background: var(--bg); color: var(--text); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 16px; font: inherit; font-size: 15px;
+}
+.readonly { color: var(--muted); }
+.avatarRow { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+.avatarBox { display: flex; flex-direction: column; gap: 10px; }
+.note { color: var(--muted); font-size: 14px; }
+
+.segment { display: flex; gap: 8px; }
+.seg {
+  flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 14px 8px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg); color: var(--text);
+}
+.segOn { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+.action {
+  display: flex; align-items: center; gap: 10px; width: 100%; padding: 16px; text-align: left;
+  background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 16px;
+}
+.danger {
+  display: flex; align-items: center; gap: 10px; width: 100%; padding: 16px;
+  background: #ff0022; color: #000; border-radius: var(--radius-sm); font-size: 16px;
+}
+.danger:disabled { opacity: 0.5; cursor: not-allowed; }
+.confirm { display: flex; flex-direction: column; gap: 10px; }
+.confirm p { color: var(--muted); }
+.confirmRow { display: flex; gap: 8px; }
+.confirmRow > * { flex: 1; justify-content: center; text-align: center; }
+.error { color: #ff6b7d; }
+.ok { color: var(--success); }

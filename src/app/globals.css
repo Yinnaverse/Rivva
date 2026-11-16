@@ -25,6 +25,7 @@
   --text: #ffffff;
   --muted: #8a8a8a;
   --nav-bg: rgba(0, 0, 0, 0.8);
+  --page-bg: #050505;
 }
 
 /* Light theme: derived from the dark one, same accent */
@@ -37,6 +38,7 @@
   --text: #0d0d0d;
   --muted: #6b6b6b;
   --nav-bg: rgba(255, 255, 255, 0.85);
+  --page-bg: #ececec;
 }
 
 @media (prefers-color-scheme: light) {
@@ -76,8 +78,8 @@ a { color: inherit; text-decoration: none; }
   background: var(--bg);
 }
 @media (min-width: 480px) {
-  body { background: #050505; }
-  .app-frame { box-shadow: 0 0 0 1px #1c1c1c; }
+  body { background: var(--page-bg); }
+  .app-frame { box-shadow: 0 0 0 1px var(--surface-2); }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -8,6 +8,7 @@ Watch together. Even when apart. A mobile-first web app (Next.js, installable as
 3. While developing, optionally turn off "Confirm email" (Email provider) so sign-up works instantly.
 
 4. SQL Editor → new query → paste `supabase/phase4.sql` → Run (videos, subtitles, synced playback, private storage bucket).
+5. SQL Editor → new query → paste `supabase/phase5.sql` → Run (saved videos, delete-my-account).
 
 ## Run it
     npm install
@@ -19,7 +20,8 @@ Watch together. Even when apart. A mobile-first web app (Next.js, installable as
 - Done: shell, tokens (dark + light), Home, Explore, real auth (email + guest)
 - Done: rooms (create, join by code, lobby with chat, presence, host settings)
 - Done: Choose Content (upload a file, paste an https link, shared library), synced watch screen (play/pause/seek sync, personal volume, personal subtitles, reactions, room chat, landscape)
-- Next: Saved, Settings (theme switch), light-mode polish, wait-for-everyone buffering
+- Done: Home/Explore show real shared videos, heart to save, Saved page, Settings (name, dark/light/system theme, download my data, clear device choices, delete account, logout)
+- Not built (needs backend work): Friends, notifications, avatar upload, language, streaming-service linking, wait-for-everyone buffering
 
 ## How sync works
 The host (or anyone, when "Sync controls" is on) sends play/pause/seek to the database; every device receives it over Realtime, works out where the movie should be using a server clock offset, and nudges itself back if it drifts more than ~0.75s. Volume and subtitles never leave your device.

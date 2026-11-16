@@ -57,7 +57,7 @@ alter table public.subtitles enable row level security;
 alter table public.room_playback enable row level security;
 
 create policy "see videos you can access" on public.videos
-  for select to authenticated using (public.can_access_video(id));
+  for select to authenticated using (owner_id = auth.uid() or public.can_access_video(id));
 create policy "add own videos" on public.videos
   for insert to authenticated with check (owner_id = auth.uid());
 create policy "edit own videos" on public.videos
