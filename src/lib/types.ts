@@ -48,6 +48,7 @@ export type SubtitleRow = { id: string; video_id: string; lang: string; label: s
 export type Playback = {
   room_id: string;
   playing: boolean;
+  held: boolean;
   position: number;
   updated_at: string;
   updated_by: string | null;

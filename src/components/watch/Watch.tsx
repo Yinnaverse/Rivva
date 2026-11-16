@@ -16,6 +16,7 @@ import styles from './Watch.module.css';
 type MemberRow = { user_id: string; profiles: { display_name: string } | null };
 type Sync = 'synced' | 'syncing' | 'offline';
 const REACTIONS = ['🔥', '😂', '😮', '❤️', '👏'];
+const HOLD_LIMIT_MS = 20000; // never keep the room waiting longer than this
 
 async function measureOffset(): Promise<number> {
   const samples: { rtt: number; offset: number }[] = [];
@@ -40,7 +41,7 @@ function store(key: string, value?: string): string | null {
 }
 
 export function Watch({ roomId }: { roomId: string }) {
-  const { user } = useAuth();
+  const { user, displayName } = useAuth();
   const router = useRouter();
   const [room, setRoom] = useState<DbRoom | null>(null);
   const [video, setVideo] = useState<Video | null>(null);
@@ -59,6 +60,10 @@ export function Watch({ roomId }: { roomId: string }) {
   const [scrub, setScrub] = useState<number | null>(null);
   const [volume, setVolume] = useState(1);
   const [sync, setSync] = useState<Sync>('syncing');
+  const [held, setHeld] = useState(false);
+  const [waitingFor, setWaitingFor] = useState<string[]>([]);
+  const [localBuffering, setLocalBuffering] = useState(false);
+  const [peerTick, setPeerTick] = useState(0);
   const [needsTap, setNeedsTap] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -71,6 +76,9 @@ export function Watch({ roomId }: { roomId: string }) {
   const needsTapRef = useRef(false);
   const channelRef = useRef<RealtimeChannel | null>(null);
   const floatId = useRef(0);
+  const bufferingRef = useRef(false);
+  const startedRef = useRef(false);
+  const peersRef = useRef<{ key: string; name: string; buffering: boolean }[]>([]);
 
   const isHost = room?.host_id === user?.id;
   const canControl = Boolean(room && (isHost || room.sync_controls));
@@ -92,6 +100,7 @@ export function Watch({ roomId }: { roomId: string }) {
 
   const applyRemote = useCallback((pb: Playback, hard = false) => {
     pbRef.current = pb;
+    setHeld(Boolean(pb.held));
     const v = videoRef.current;
     if (!v || v.readyState < 1) return; // loadedmetadata re-applies once ready
     const target = expectedAt(pb);
@@ -147,13 +156,22 @@ export function Watch({ roomId }: { roomId: string }) {
         else if (next.video_id !== videoId) window.location.reload();
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'room_members', filter: `room_id=eq.${roomId}` }, () => { loadMembers(); })
-      .on('presence', { event: 'sync' }, () => setOnline(new Set(Object.keys(ch.presenceState()))))
+      .on('presence', { event: 'sync' }, () => {
+        const state = ch.presenceState() as unknown as Record<string, { name?: string; buffering?: boolean }[]>;
+        setOnline(new Set(Object.keys(state)));
+        peersRef.current = Object.entries(state).map(([key, metas]) => {
+          const last = metas[metas.length - 1];
+          return { key, name: last?.name ?? 'Someone', buffering: Boolean(last?.buffering) };
+        });
+        setWaitingFor(peersRef.current.filter((p) => p.buffering && p.key !== user.id).map((p) => p.name));
+        setPeerTick((n) => n + 1);
+      })
       .on('broadcast', { event: 'reaction' }, ({ payload }) => {
         if (REACTIONS.includes(payload?.emoji)) showReaction(payload.emoji);
       })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
-          await ch.track({ at: Date.now() });
+          await ch.track({ name: displayName, buffering: bufferingRef.current });
           setSync('syncing');
           // catch anything we missed while connecting
           const { data } = await supabase.from('room_playback').select('*').eq('room_id', roomId).maybeSingle();
@@ -185,6 +203,47 @@ export function Watch({ roomId }: { roomId: string }) {
     }, 1500);
     return () => clearInterval(t);
   }, [expectedAt]);
+
+  // Buffering: tell the room when this device can't keep up
+  const updateBuffering = useCallback(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    setLocalBuffering(v.readyState < 3 && !v.ended);
+  }, []);
+  useEffect(() => {
+    const t = setInterval(updateBuffering, 1500);
+    return () => clearInterval(t);
+  }, [updateBuffering]);
+  useEffect(() => {
+    bufferingRef.current = localBuffering;
+    channelRef.current?.track({ name: displayName, buffering: localBuffering });
+  }, [localBuffering, displayName]);
+
+  // If this device stalls mid-movie, freeze the room at this spot
+  useEffect(() => {
+    if (!localBuffering) return;
+    const t = setTimeout(async () => {
+      const v = videoRef.current;
+      const pb = pbRef.current;
+      if (!v || !pb || !pb.playing || pb.held || !startedRef.current || v.readyState >= 3) return;
+      const { data } = await supabase.rpc('hold_playback', { p_room: roomId, p_position: v.currentTime });
+      if (data) applyRemote(data as Playback);
+    }, 700);
+    return () => clearTimeout(t);
+  }, [localBuffering, roomId, applyRemote]);
+
+  // While frozen, resume together once everyone is ready (or after a maximum wait)
+  useEffect(() => {
+    if (!held) return;
+    const pb = pbRef.current;
+    const heldFor = pb ? Date.now() + offsetRef.current - Date.parse(pb.updated_at) : 0;
+    const everyoneReady = !localBuffering && peersRef.current.every((p) => !p.buffering);
+    const t = setTimeout(async () => {
+      const { data } = await supabase.rpc('resume_playback', { p_room: roomId });
+      if (data) applyRemote(data as Playback);
+    }, everyoneReady ? 600 : Math.max(0, HOLD_LIMIT_MS - heldFor));
+    return () => clearTimeout(t);
+  }, [held, localBuffering, peerTick, roomId, applyRemote]);
 
   // Subtitles (per person)
   useEffect(() => {
@@ -220,7 +279,7 @@ export function Watch({ roomId }: { roomId: string }) {
   async function push(next: boolean, position: number) {
     // optimistic so the drift check doesn't undo what we just did
     pbRef.current = {
-      room_id: roomId, playing: next, position, updated_by: user?.id ?? null,
+      room_id: roomId, playing: next, held: false, position, updated_by: user?.id ?? null,
       updated_at: new Date(Date.now() + offsetRef.current).toISOString(),
     };
     const { data, error } = await supabase.rpc('set_playback', { p_room: roomId, p_playing: next, p_position: position });
@@ -289,6 +348,8 @@ export function Watch({ roomId }: { roomId: string }) {
           onLoadedMetadata={(e) => { setDuration(e.currentTarget.duration || 0); if (pbRef.current) applyRemote(pbRef.current, true); }}
           onTimeUpdate={(e) => setCurrent(e.currentTarget.currentTime)}
           onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)}
+          onPlaying={() => { startedRef.current = true; updateBuffering(); }}
+          onWaiting={updateBuffering} onStalled={updateBuffering} onCanPlay={updateBuffering} onSeeked={updateBuffering} onLoadedData={updateBuffering}
           onEnded={() => { if (canControl) push(false, duration); }}
           onError={() => setNotice('This video can’t be played in the browser. Use an MP4 (H.264) or WebM file.')}
         >
@@ -307,6 +368,15 @@ export function Watch({ roomId }: { roomId: string }) {
           <AvatarStack names={members.slice(0, 6).map((m) => m.name)} />
         </header>
 
+        {held && (
+          <div className={styles.waiting} role="status">
+            <span className={styles.spinner} aria-hidden />
+            {(() => {
+              const names = [...(localBuffering ? ['you'] : []), ...waitingFor];
+              return names.length ? `Waiting for ${names.join(', ')} to catch up…` : 'Getting everyone ready…';
+            })()}
+          </div>
+        )}
         {needsTap && (
           <button className={styles.tap} onClick={joinNow}><Play size={32} fill="currentColor" /> Tap to join the movie</button>
         )}
@@ -339,8 +409,8 @@ export function Watch({ roomId }: { roomId: string }) {
                 onChange={(e) => { const v = parseFloat(e.target.value); setVolume(v); store('rivva:volume', String(v)); }}
               />
             </div>
-            <span className={`${styles.sync} ${styles[sync]}`} role="status">
-              <Wifi size={22} /> {sync === 'synced' ? 'Synced' : sync === 'syncing' ? 'Syncing…' : 'Offline'}
+            <span className={`${styles.sync} ${styles[held ? 'syncing' : sync]}`} role="status">
+              <Wifi size={22} /> {held ? 'Waiting…' : sync === 'synced' ? 'Synced' : sync === 'syncing' ? 'Syncing…' : 'Offline'}
             </span>
             {room.allow_reactions ? (
               <div className={styles.reactWrap}>

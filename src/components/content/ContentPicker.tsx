@@ -9,7 +9,7 @@ import { SUBTITLE_LANGUAGES } from '@/lib/subtitles';
 import { supabase } from '@/lib/supabase';
 import type { Video } from '@/lib/types';
 import {
-  addSubtitle, addVideoLink, chooseForRoom, deleteVideo, formatClock, listVideos, setShared, uploadVideo,
+  addSubtitle, addVideoLink, chooseForRoom, deleteVideo, formatClock, listVideos, MAX_UPLOAD_BYTES, MAX_UPLOAD_MB, setShared, uploadVideo,
 } from '@/lib/videos';
 import { Button } from '../Button';
 import styles from './ContentPicker.module.css';
@@ -37,6 +37,10 @@ export function ContentPicker({ roomId }: { roomId: string }) {
   const [subLang, setSubLang] = useState('en');
   const [url, setUrl] = useState('');
   const [dragging, setDragging] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [phase, setPhase] = useState('');
+  const abortRef = useRef<AbortController | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
@@ -57,36 +61,50 @@ export function ContentPicker({ roomId }: { roomId: string }) {
       setError('Please choose a video file.');
       return;
     }
+    if (f.size > MAX_UPLOAD_BYTES) {
+      setError(`That file is ${(f.size / 1048576).toFixed(0)} MB, and the limit is ${MAX_UPLOAD_MB} MB. Try a shorter clip, or paste a direct link to the video instead.`);
+      return;
+    }
     setError(null);
     setFile(f);
     setTitle(f.name.replace(/\.[^.]+$/, '').replace(/[._-]+/g, ' ').trim());
   }
 
-  async function watch(video: Video) {
+  async function watch(video: Video): Promise<boolean> {
     setBusy(`watch:${video.id}`);
     setError(null);
     try {
       await chooseForRoom(roomId, video.id);
       router.push(`/rooms/${roomId}/watch`);
+      return true;
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not start the movie');
       setBusy(null);
+      return false;
     }
   }
 
   async function onUpload() {
     if (!file) return;
+    const ac = new AbortController();
+    abortRef.current = ac;
+    setUploading(true);
+    setProgress(0);
+    setPhase('Uploading…');
     setBusy('upload');
     setError(null);
     try {
-      const video = await uploadVideo(file, title.trim() || file.name);
+      const video = await uploadVideo(file, title.trim() || file.name, setProgress, ac.signal);
       if (subFile) {
+        setPhase('Adding subtitles…');
         const lang = SUBTITLE_LANGUAGES.find((l) => l.code === subLang)!;
         await addSubtitle(video.id, subFile, lang.code, lang.label);
       }
-      await watch(video);
+      setPhase('Starting the room…');
+      if (!(await watch(video))) setUploading(false);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Upload failed');
+      setError(e instanceof DOMException && e.name === 'AbortError' ? 'Upload cancelled.' : e instanceof Error ? e.message : 'Upload failed');
+      setUploading(false);
       setBusy(null);
     }
   }
@@ -176,7 +194,7 @@ export function ContentPicker({ roomId }: { roomId: string }) {
               ) : (
                 <>
                   <p className={styles.strong}>Drag and drop your video files</p>
-                  <p className={styles.muted}>Supports MP4, WebM and MOV</p>
+                  <p className={styles.muted}>Supports MP4, WebM and MOV, up to {MAX_UPLOAD_MB} MB</p>
                 </>
               )}
               <button type="button" className={styles.chooseBtn} onClick={() => fileInput.current?.click()}>
@@ -196,7 +214,20 @@ export function ContentPicker({ roomId }: { roomId: string }) {
                   </select>
                   <input id="v-sub" className={styles.input} type="file" accept=".srt,.vtt" onChange={(e) => setSubFile(e.target.files?.[0] ?? null)} />
                 </div>
-                <Button full onClick={onUpload}>{busy === 'upload' || busy?.startsWith('watch') ? 'Uploading… keep this page open' : 'Upload & Start watching'}</Button>
+                {uploading ? (
+                  <div className={styles.progress}>
+                    <div className={styles.bar} role="progressbar" aria-label="Upload progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress}>
+                      <span style={{ width: `${progress}%` }} />
+                    </div>
+                    <div className={styles.progressRow}>
+                      <span>{progress < 100 ? `Uploading… ${progress}%` : phase}</span>
+                      {progress < 100 && <button type="button" className={styles.cancel} onClick={() => abortRef.current?.abort()}>Cancel</button>}
+                    </div>
+                    <p className={styles.hint}>Keep this page open until it finishes.</p>
+                  </div>
+                ) : (
+                  <Button full onClick={onUpload}>Upload &amp; Start watching</Button>
+                )}
               </div>
             )}
 

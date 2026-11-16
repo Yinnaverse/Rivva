@@ -1,5 +1,24 @@
-// Placeholder mark — replace with the exported Figma logo asset in /public.
+'use client';
+
+import { useEffect, useRef, useState } from 'react';
+
+/**
+ * Shows /public/logo.svg (your exported Yinnaverse mark). Until that file exists,
+ * it falls back to a simple placeholder mark.
+ */
 export function Logo({ size = 40 }: { size?: number }) {
+  const [custom, setCustom] = useState(true);
+  const img = useRef<HTMLImageElement>(null);
+
+  useEffect(() => {
+    const el = img.current;
+    if (el && el.complete && el.naturalWidth === 0) setCustom(false);
+  }, []);
+
+  if (custom) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img ref={img} src="/logo.svg" alt="Rivva" style={{ height: size, width: 'auto', display: 'block' }} onError={() => setCustom(false)} />;
+  }
   return (
     <svg width={size} height={size} viewBox="0 0 64 64" role="img" aria-label="Rivva">
       <rect width="64" height="64" rx="14" fill="var(--accent)" />

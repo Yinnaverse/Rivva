@@ -22,7 +22,46 @@ export function readDuration(file: File): Promise<number | null> {
   });
 }
 
-export async function uploadVideo(file: File, title: string): Promise<Video> {
+export const MAX_UPLOAD_MB = 50; // Supabase Free plan limit per file
+export const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024;
+
+/** Same request supabase-js makes, but through XMLHttpRequest so we get real progress. */
+async function uploadWithProgress(path: string, file: Blob, onProgress: (pct: number) => void, signal?: AbortSignal): Promise<void> {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  if (!token) throw new Error('Please sign in again to upload.');
+  const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? '';
+
+  return new Promise<void>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${base}/storage/v1/object/${BUCKET}/${path}`);
+    xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+    xhr.setRequestHeader('apikey', key);
+    xhr.setRequestHeader('x-upsert', 'false');
+    xhr.upload.onprogress = (e) => { if (e.lengthComputable) onProgress(Math.min(100, Math.round((e.loaded / e.total) * 100))); };
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) { onProgress(100); resolve(); return; }
+      let message = `Upload failed (${xhr.status})`;
+      try { message = JSON.parse(xhr.responseText).message ?? message; } catch { /* not JSON */ }
+      reject(new Error(message));
+    };
+    xhr.onerror = () => reject(new Error('The connection dropped during the upload. Check your internet and try again.'));
+    xhr.onabort = () => reject(new DOMException('Upload cancelled', 'AbortError'));
+    signal?.addEventListener('abort', () => xhr.abort());
+    const body = new FormData();
+    body.append('cacheControl', '3600');
+    body.append('', file);
+    xhr.send(body);
+  });
+}
+
+export async function uploadVideo(
+  file: File, title: string, onProgress: (pct: number) => void = () => {}, signal?: AbortSignal,
+): Promise<Video> {
+  if (file.size > MAX_UPLOAD_BYTES) {
+    throw new Error(`That file is ${(file.size / 1048576).toFixed(0)} MB. The limit is ${MAX_UPLOAD_MB} MB.`);
+  }
   const ext = (file.name.split('.').pop() || 'mp4').toLowerCase().replace(/[^a-z0-9]/g, '');
   const fileName = `video.${ext || 'mp4'}`;
   const duration = await readDuration(file);
@@ -35,12 +74,11 @@ export async function uploadVideo(file: File, title: string): Promise<Video> {
   if (error) throw new Error(error.message);
 
   const video = row as Video;
-  const { error: upErr } = await supabase.storage
-    .from(BUCKET)
-    .upload(`${video.id}/${fileName}`, file, { contentType: file.type || 'video/mp4', upsert: false });
-  if (upErr) {
-    await supabase.from('videos').delete().eq('id', video.id);
-    throw new Error(upErr.message);
+  try {
+    await uploadWithProgress(`${video.id}/${fileName}`, file, onProgress, signal);
+  } catch (e) {
+    await supabase.from('videos').delete().eq('id', video.id); // don't leave an empty record behind
+    throw e;
   }
   return video;
 }
