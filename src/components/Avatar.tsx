@@ -18,9 +18,9 @@ export function Avatar({ name, size = 30 }: { name: string; size?: number }) {
 export function AvatarStack({ names, size = 30 }: { names: string[]; size?: number }) {
   return (
     <span className={styles.stack}>
-      {names.map((n) => (
-        <Avatar key={n} name={n} size={size} />
-      ))}
+      {names.map((n, i) => (
+  <Avatar key={`${i}-${n}`} name={n} size={size} />
+))}
     </span>
   );
 }
