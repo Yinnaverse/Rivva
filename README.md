@@ -28,7 +28,9 @@ Watch together. Even when apart. A mobile-first web app (Next.js, installable as
 - Done: the room pauses for everyone when one person's video stalls, then resumes together (max wait 20s)
 
 ## How sync works
-The host (or anyone, when "Sync controls" is on) sends play/pause/seek to the database; every device receives it over Realtime, works out where the movie should be using a server clock offset, and nudges itself back if it drifts more than ~0.75s. Volume and subtitles never leave your device.
+The host (or anyone, when "Sync controls" is on) sends play/pause/seek to the database; every device receives it over Realtime and works out where the movie should be using a server clock offset (re-measured every minute, and play/seek positions are sent half a round trip ahead). Small drift is fixed by nudging playback speed by up to 8% (no jump); only drift over 2.5s causes a seek. Volume and subtitles never leave your device.
+
+Troubleshooting: in the watch screen open the gear, then "Sync info" → Showing. It prints drift, speed, buffering, clock offset and round trip.
 
 ## Limits to know
 - Free Supabase plan: 50 MB per uploaded file. For longer films, upgrade and raise the limit, or paste a direct https link to an MP4/WebM instead.

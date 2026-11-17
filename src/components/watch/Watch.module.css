@@ -89,6 +89,12 @@
 .spinner { width: 18px; height: 18px; flex-shrink: 0; border-radius: 50%; border: 3px solid #555; border-top-color: var(--accent); animation: spin 0.9s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+.debug {
+  position: absolute; z-index: 7; left: 12px; top: calc(96px + env(safe-area-inset-top)); margin: 0;
+  padding: 8px 10px; background: rgba(0, 0, 0, 0.7); border-radius: 8px; color: #9dffb5;
+  font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; pointer-events: none;
+}
+
 /* Landscape phones: chat docks to the right and the video shrinks beside it */
 @media (orientation: landscape) and (max-height: 600px) {
   .chatOpen .player { right: 37%; }

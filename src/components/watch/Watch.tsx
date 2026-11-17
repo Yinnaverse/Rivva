@@ -18,18 +18,18 @@ type Sync = 'synced' | 'syncing' | 'offline';
 const REACTIONS = ['🔥', '😂', '😮', '❤️', '👏'];
 const HOLD_LIMIT_MS = 20000; // never keep the room waiting longer than this
 
-async function measureOffset(): Promise<number> {
+async function measureClock(): Promise<{ offset: number; rtt: number }> {
   const samples: { rtt: number; offset: number }[] = [];
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 5; i++) {
     const t0 = Date.now();
     const { data, error } = await supabase.rpc('server_time');
     const t1 = Date.now();
     if (error || !data) continue;
     samples.push({ rtt: t1 - t0, offset: Date.parse(data as string) - (t0 + t1) / 2 });
   }
-  if (!samples.length) return 0;
-  samples.sort((a, b) => a.rtt - b.rtt);
-  return samples[0].offset;
+  if (!samples.length) return { offset: 0, rtt: 0 };
+  samples.sort((x, y) => x.rtt - y.rtt); // the fastest round trip is the most accurate
+  return samples[0];
 }
 
 function store(key: string, value?: string): string | null {
@@ -64,6 +64,8 @@ export function Watch({ roomId }: { roomId: string }) {
   const [waitingFor, setWaitingFor] = useState<string[]>([]);
   const [localBuffering, setLocalBuffering] = useState(false);
   const [peerTick, setPeerTick] = useState(0);
+  const [debug, setDebug] = useState(false);
+  const [dbg, setDbg] = useState('');
   const [needsTap, setNeedsTap] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -76,6 +78,10 @@ export function Watch({ roomId }: { roomId: string }) {
   const needsTapRef = useRef(false);
   const channelRef = useRef<RealtimeChannel | null>(null);
   const floatId = useRef(0);
+  const rttRef = useRef(0);
+  const lastSeekRef = useRef(0);
+  const lastResumeRef = useRef(0);
+  const driftRef = useRef(0);
   const bufferingRef = useRef(false);
   const startedRef = useRef(false);
   const peersRef = useRef<{ key: string; name: string; buffering: boolean }[]>([]);
@@ -90,6 +96,7 @@ export function Watch({ roomId }: { roomId: string }) {
     const v = parseFloat(store('rivva:volume') ?? '');
     if (!Number.isNaN(v)) setVolume(Math.min(1, Math.max(0, v)));
     setSubLang(store('rivva:subtitle') ?? 'off');
+    setDebug(store('rivva:debug') === '1');
   }, []);
   useEffect(() => { if (videoRef.current) videoRef.current.volume = volume; }, [volume, src]);
 
@@ -104,7 +111,8 @@ export function Watch({ roomId }: { roomId: string }) {
     const v = videoRef.current;
     if (!v || v.readyState < 1) return; // loadedmetadata re-applies once ready
     const target = expectedAt(pb);
-    if (hard || Math.abs(v.currentTime - target) > 0.5) v.currentTime = target;
+    if (hard || Math.abs(v.currentTime - target) > 0.8) { v.currentTime = target; lastSeekRef.current = Date.now(); }
+    v.playbackRate = 1;
     if (pb.playing) v.play().then(() => setNeedsTap(false)).catch(() => setNeedsTap(true));
     else v.pause();
   }, [expectedAt]);
@@ -129,10 +137,11 @@ export function Watch({ roomId }: { roomId: string }) {
       const [url, subRows, pb, off] = await Promise.all([
         getVideoUrl(vid), listSubtitles(vid.id),
         supabase.from('room_playback').select('*').eq('room_id', roomId).maybeSingle(),
-        measureOffset(), loadMembers(),
+        measureClock(), loadMembers(),
       ]);
       if (cancelled) return;
-      offsetRef.current = off;
+      offsetRef.current = off.offset;
+      rttRef.current = off.rtt;
       pbRef.current = (pb.data as Playback | null) ?? null;
       setRoom(rm); setVideo(vid); setSrc(url); setSubs(subRows);
     })().catch((e) => setFatal(e instanceof Error ? e.message : 'Could not open the movie'));
@@ -184,25 +193,64 @@ export function Watch({ roomId }: { roomId: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomId, user, videoId, applyRemote, loadMembers, router]);
 
-  // Drift correction every 1.5s
+  // Stay in step with the room: nudge playback speed for small drift, seek only when far off
   useEffect(() => {
     const t = setInterval(() => {
       const pb = pbRef.current;
       const v = videoRef.current;
       if (!pb || !v || v.readyState < 1) return;
       const target = expectedAt(pb);
-      const diff = Math.abs(v.currentTime - target);
+      const behind = target - v.currentTime; // positive = this device is behind the room
+      const diff = Math.abs(behind);
+      driftRef.current = behind;
       if (pb.playing) {
         if (v.paused && !needsTapRef.current) v.play().catch(() => setNeedsTap(true));
-        if (diff > 0.75) v.currentTime = target;
+        const settled = !v.seeking && v.readyState >= 3 && Date.now() - lastSeekRef.current > 4000;
+        if (diff > 2.5 && settled) {
+          v.currentTime = target;
+          lastSeekRef.current = Date.now();
+          v.playbackRate = 1;
+        } else if (diff > 0.15 && diff <= 2.5) {
+          v.playbackRate = Math.min(1.08, Math.max(0.92, 1 + behind * 0.15));
+        } else if (diff <= 0.15 && v.playbackRate !== 1) {
+          v.playbackRate = 1;
+        }
       } else {
+        v.playbackRate = 1;
         if (!v.paused) v.pause();
-        if (diff > 0.3) v.currentTime = pb.position;
+        if (diff > 0.3) { v.currentTime = pb.position; lastSeekRef.current = Date.now(); }
       }
-      setSync((s) => (s === 'offline' ? s : diff < 1.5 ? 'synced' : 'syncing'));
-    }, 1500);
+      setSync((x) => (x === 'offline' ? x : diff < 1.5 ? 'synced' : 'syncing'));
+    }, 1000);
     return () => clearInterval(t);
   }, [expectedAt]);
+
+  // Re-measure the clock difference now and then; phones and networks wander
+  useEffect(() => {
+    const t = setInterval(async () => {
+      const c = await measureClock();
+      if (c.rtt) { offsetRef.current = c.offset; rttRef.current = c.rtt; }
+    }, 60000);
+    return () => clearInterval(t);
+  }, []);
+
+  // Optional on-screen sync readout (Watch settings → Sync info)
+  useEffect(() => {
+    if (!debug) return;
+    const t = setInterval(() => {
+      const v = videoRef.current;
+      const pb = pbRef.current;
+      if (!v) return;
+      setDbg([
+        `drift ${driftRef.current.toFixed(2)}s (+ = behind)`,
+        `speed ${v.playbackRate.toFixed(2)}x  ready ${v.readyState}  seeking ${v.seeking ? 'yes' : 'no'}`,
+        `clock offset ${Math.round(offsetRef.current)}ms  round trip ${Math.round(rttRef.current)}ms`,
+        `room ${pb ? (pb.playing ? 'playing' : pb.held ? 'held' : 'paused') : '-'} @ ${pb ? pb.position.toFixed(1) : '-'}s`,
+        `connection ${sync}`,
+      ].join('\n'));
+    }, 1000);
+    return () => clearInterval(t);
+  }, [debug, sync]);
 
   // Buffering: tell the room when this device can't keep up
   const updateBuffering = useCallback(() => {
@@ -226,9 +274,10 @@ export function Watch({ roomId }: { roomId: string }) {
       const v = videoRef.current;
       const pb = pbRef.current;
       if (!v || !pb || !pb.playing || pb.held || !startedRef.current || v.readyState >= 3) return;
+      if (Date.now() - lastSeekRef.current < 4000 || Date.now() - lastResumeRef.current < 10000) return; // our own seek or a recent resume, not a real stall
       const { data } = await supabase.rpc('hold_playback', { p_room: roomId, p_position: v.currentTime });
       if (data) applyRemote(data as Playback);
-    }, 700);
+    }, 1500);
     return () => clearTimeout(t);
   }, [localBuffering, roomId, applyRemote]);
 
@@ -240,6 +289,7 @@ export function Watch({ roomId }: { roomId: string }) {
     const everyoneReady = !localBuffering && peersRef.current.every((p) => !p.buffering);
     const t = setTimeout(async () => {
       const { data } = await supabase.rpc('resume_playback', { p_room: roomId });
+      lastResumeRef.current = Date.now();
       if (data) applyRemote(data as Playback);
     }, everyoneReady ? 600 : Math.max(0, HOLD_LIMIT_MS - heldFor));
     return () => clearTimeout(t);
@@ -282,7 +332,10 @@ export function Watch({ roomId }: { roomId: string }) {
       room_id: roomId, playing: next, held: false, position, updated_by: user?.id ?? null,
       updated_at: new Date(Date.now() + offsetRef.current).toISOString(),
     };
-    const { data, error } = await supabase.rpc('set_playback', { p_room: roomId, p_playing: next, p_position: position });
+    // While playing, the movie keeps moving as this request travels to the server, so send
+    // where it will be on arrival (half the round trip ahead). Pausing needs no adjustment.
+    const sent = next ? position + rttRef.current / 2000 : position;
+    const { data, error } = await supabase.rpc('set_playback', { p_room: roomId, p_playing: next, p_position: sent });
     if (error) { setNotice(error.message); return; }
     if (data) pbRef.current = data as Playback;
   }
@@ -368,6 +421,7 @@ export function Watch({ roomId }: { roomId: string }) {
           <AvatarStack names={members.slice(0, 6).map((m) => m.name)} />
         </header>
 
+        {debug && <pre className={styles.debug}>{dbg}</pre>}
         {held && (
           <div className={styles.waiting} role="status">
             <span className={styles.spinner} aria-hidden />
@@ -443,6 +497,10 @@ export function Watch({ roomId }: { roomId: string }) {
             <p className={styles.sheetNote}>
               {room.sync_controls ? 'Everyone can play, pause and seek for the whole room.' : 'Only the host controls playback.'}
             </p>
+            <h3 className={styles.sheetLabel}>Sync info <span>for troubleshooting</span></h3>
+            <div className={styles.options}>
+              <button className={debug ? styles.optOn : styles.opt} onClick={() => { const n = !debug; setDebug(n); store('rivva:debug', n ? '1' : '0'); }}>{debug ? 'Showing' : 'Hidden'}</button>
+            </div>
             {isHost && (
               <div className={styles.hostBtns}>
                 <Link href={`/rooms/${roomId}/content`} className={styles.opt}>Change movie</Link>
