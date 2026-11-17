@@ -59,7 +59,8 @@ export function AuthForm({ mode }: { mode: 'login' | 'signup' }) {
       <form className={styles.form} onSubmit={onSubmit}>
         {signup && <Field id="name" label="Full Name" icon={<User size={24} />} placeholder="Your name" autoComplete="name" />}
         <Field id="email" label="Email" icon={<Mail size={24} />} type="email" placeholder="you@example.com" autoComplete="email" />
-        <Field id="password" label="Password" icon={<Lock size={24} />} type="password" placeholder="Password" autoComplete={signup ? 'new-password' : 'current-password'} />
+        <Field id="password" label="Password" icon={<Lock size={24} />} type="password" placeholder="Password" autoComplete={signup ? 'new-password' : 'current-password'} minLength={signup ? 8 : undefined} />
+        {!signup && <Link href="/forgot-password" className={styles.forgot}>Forgot password?</Link>}
         {error && <p role="alert" className={styles.error}>{error}</p>}
         {notice && <p role="status" className={styles.notice}>{notice}</p>}
         <Button full type="submit">{busy ? 'One moment…' : signup ? 'Create Account' : 'Login'}</Button>

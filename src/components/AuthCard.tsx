@@ -16,14 +16,14 @@ export function AuthCard({ subtitle, children }: { subtitle: string; children: R
 }
 
 export function Field({
-  id, label, icon, type = 'text', placeholder, autoComplete,
+  id, label, icon, type = 'text', placeholder, autoComplete, minLength,
 }: {
-  id: string; label: string; icon: React.ReactNode; type?: string; placeholder: string; autoComplete?: string;
+  id: string; label: string; icon: React.ReactNode; type?: string; placeholder: string; autoComplete?: string; minLength?: number;
 }) {
   return (
     <div className={styles.field}>
       <label htmlFor={id} className={styles.label}>{icon}{label}</label>
-      <input id={id} name={id} type={type} placeholder={placeholder} autoComplete={autoComplete} className={styles.input} required />
+      <input id={id} name={id} type={type} placeholder={placeholder} autoComplete={autoComplete} minLength={minLength} className={styles.input} required />
     </div>
   );
 }

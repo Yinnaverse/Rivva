@@ -10,6 +10,7 @@ import { supabase } from '@/lib/supabase';
 import { timeAgo } from '@/lib/time';
 import type { ChatMessage, DbRoom, Member } from '@/lib/types';
 import { Avatar } from '../Avatar';
+import { BackButton } from '../BackButton';
 import { Button } from '../Button';
 import { Toggle } from '../Toggle';
 import { InviteFriends } from './InviteFriends';
@@ -170,6 +171,7 @@ export function Lobby({ roomId }: { roomId: string }) {
 
   return (
     <div className={styles.page}>
+      <BackButton fallback="/rooms" label="Rooms" />
       <header className={styles.header}>
         <div className={styles.titleRow}>
           <h1 className={styles.h1}>{room.name}</h1>

@@ -11,6 +11,7 @@ import { deleteVideo } from '@/lib/videos';
 import { Avatar } from '../Avatar';
 import { Button } from '../Button';
 import { FriendsSection } from './FriendsSection';
+import { NotificationsSection } from './NotificationsSection';
 import styles from './SettingsView.module.css';
 
 const THEMES: { id: ThemePref; label: string; Icon: typeof Sun }[] = [
@@ -29,6 +30,8 @@ export function SettingsView() {
   const [confirming, setConfirming] = useState(false);
   const [typed, setTyped] = useState('');
   const [deleting, setDeleting] = useState(false);
+  const [newPw, setNewPw] = useState('');
+  const [pwBusy, setPwBusy] = useState(false);
 
   useEffect(() => setTheme(getThemePref()), []);
   useEffect(() => setName(displayName), [displayName]);
@@ -44,6 +47,15 @@ export function SettingsView() {
     const { error: e2 } = await supabase.auth.updateUser({ data: { name: clean } });
     setSaving(false);
     setMessage(e1 || e2 ? { kind: 'error', text: (e1 ?? e2)!.message } : { kind: 'ok', text: 'Name updated.' });
+  }
+
+  async function changePassword() {
+    if (newPw.length < 8) { setMessage({ kind: 'error', text: 'Use at least 8 characters.' }); return; }
+    setPwBusy(true);
+    const { error } = await supabase.auth.updateUser({ password: newPw });
+    setPwBusy(false);
+    if (error) setMessage({ kind: 'error', text: error.message });
+    else { setNewPw(''); setMessage({ kind: 'ok', text: 'Password updated.' }); }
   }
 
   function pickTheme(t: ThemePref) {
@@ -128,6 +140,13 @@ export function SettingsView() {
           <div className={styles.avatarBox}><span>Avatar</span><Avatar name={displayName} size={46} /></div>
           <Button onClick={saveName}>{saving ? 'Saving…' : 'Save name'}</Button>
         </div>
+        {!isGuest && (
+          <div className={styles.field}>
+            <label htmlFor="new-password">Change password</label>
+            <input id="new-password" type="password" className={styles.input} value={newPw} placeholder="New password (8+ characters)" autoComplete="new-password" onChange={(e) => setNewPw(e.target.value)} />
+            <Button onClick={changePassword}>{pwBusy ? 'Updating…' : 'Update password'}</Button>
+          </div>
+        )}
         {isGuest && <p className={styles.note}>You’re using a guest account. It only lives on this device, so sign up to use Rivva anywhere.</p>}
       </section>
 
@@ -141,6 +160,8 @@ export function SettingsView() {
           ))}
         </div>
       </section>
+
+      <NotificationsSection />
 
       <FriendsSection />
 
