@@ -1,0 +1,6 @@
+.wrap { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.invite { display: flex; align-items: center; gap: 10px; padding: 12px; background: var(--surface); border: 1px solid var(--accent); border-radius: var(--radius-lg); }
+.text { flex: 1; min-width: 0; font-size: 15px; }
+.join { padding: 8px 16px; border-radius: var(--radius-sm); background: var(--accent); color: #fff; }
+.no { padding: 6px 8px; color: var(--muted); }
+.error { color: #ff6b7d; font-size: 14px; }

@@ -12,6 +12,7 @@ import type { ChatMessage, DbRoom, Member } from '@/lib/types';
 import { Avatar } from '../Avatar';
 import { Button } from '../Button';
 import { Toggle } from '../Toggle';
+import { InviteFriends } from './InviteFriends';
 import styles from './Lobby.module.css';
 
 type MemberRow = { user_id: string; profiles: { display_name: string } | null };
@@ -266,6 +267,8 @@ export function Lobby({ roomId }: { roomId: string }) {
           );
         })}
       </section>
+
+      <InviteFriends roomId={roomId} memberIds={members.map((m) => m.user_id)} />
 
       <section className={styles.card}>
         <div className={styles.cardHead}><Settings size={24} /><h2 className={styles.label}>Room Settings</h2></div>

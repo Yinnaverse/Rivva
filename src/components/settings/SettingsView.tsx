@@ -10,6 +10,7 @@ import type { Video } from '@/lib/types';
 import { deleteVideo } from '@/lib/videos';
 import { Avatar } from '../Avatar';
 import { Button } from '../Button';
+import { FriendsSection } from './FriendsSection';
 import styles from './SettingsView.module.css';
 
 const THEMES: { id: ThemePref; label: string; Icon: typeof Sun }[] = [
@@ -140,6 +141,8 @@ export function SettingsView() {
           ))}
         </div>
       </section>
+
+      <FriendsSection />
 
       <section className={styles.card}>
         <div className={styles.head}><h2>Privacy &amp; Data</h2><p>Manage your data and privacy settings</p></div>

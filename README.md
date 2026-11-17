@@ -10,6 +10,7 @@ Watch together. Even when apart. A mobile-first web app (Next.js, installable as
 4. SQL Editor → new query → paste `supabase/phase4.sql` → Run (videos, subtitles, synced playback, private storage bucket).
 5. SQL Editor → new query → paste `supabase/phase5.sql` → Run (saved videos, delete-my-account).
 6. SQL Editor → new query → paste `supabase/phase6.sql` → Run (pause the room while someone buffers).
+7. SQL Editor → new query → paste `supabase/phase7.sql` → Run (usernames, friends, room invites).
 
 ## Run it
     npm install
@@ -22,7 +23,8 @@ Watch together. Even when apart. A mobile-first web app (Next.js, installable as
 - Done: rooms (create, join by code, lobby with chat, presence, host settings)
 - Done: Choose Content (upload a file, paste an https link, shared library), synced watch screen (play/pause/seek sync, personal volume, personal subtitles, reactions, room chat, landscape)
 - Done: Home/Explore show real shared videos, heart to save, Saved page, Settings (name, dark/light/system theme, download my data, clear device choices, delete account, logout)
-- Not built (needs backend work): Friends, notifications, avatar upload, language, streaming-service linking
+- Done: usernames, friend requests (accept / decline / remove), a copyable friend link, inviting friends into a room, invites shown on Home (friends need a full account, not a guest)
+- Not built: push notifications, avatar upload, language, streaming-service linking
 
 - Done: uploads show live progress with Cancel, and files over 50 MB are rejected up front
 - Done: the room pauses for everyone when one person's video stalls, then resumes together (max wait 20s)

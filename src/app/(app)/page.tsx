@@ -1,4 +1,5 @@
 import { HomeActions } from '@/components/HomeActions';
+import { RoomInvites } from '@/components/RoomInvites';
 import { RoomList } from '@/components/RoomList';
 import { VideoList } from '@/components/VideoList';
 import styles from './home.module.css';
@@ -6,6 +7,7 @@ import styles from './home.module.css';
 export default function HomePage() {
   return (
     <>
+      <RoomInvites />
       <HomeActions />
 
       <section className={styles.section}>
