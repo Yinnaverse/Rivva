@@ -6,6 +6,7 @@ import { ALERT_KINDS, alertsSupported, readPref, requestAlertPermission, writePr
 import { Toggle } from '../Toggle';
 import shared from './SettingsView.module.css';
 import styles from './NotificationsSection.module.css';
+import { BRAND } from '@/lib/brand';
 
 export function NotificationsSection() {
   const [supported, setSupported] = useState(true);
@@ -31,7 +32,7 @@ export function NotificationsSection() {
     <section className={shared.card}>
       <div className={shared.head}><h2><Bell size={22} /> Notifications</h2><p>Choose what you get alerted about</p></div>
       {!supported ? (
-        <p className={shared.note}>This browser can’t show alerts. On iPhone, tap Share then “Add to Home Screen” and open Rivva from there. Your notifications still appear in the bell inside the app.</p>
+        <p className={shared.note}>This browser can’t show alerts. On iPhone, tap Share then “Add to Home Screen” and open {BRAND.name} from there. Your notifications still appear in the bell inside the app.</p>
       ) : (
         <>
           <div className={styles.row}><span>Browser alerts</span><Toggle checked={master} onChange={toggleMaster} label="Browser alerts" /></div>
@@ -41,7 +42,7 @@ export function NotificationsSection() {
               <Toggle checked={kinds[k.key] ?? true} label={k.label} onChange={(v) => { writePref(k.key, v); setKinds((s) => ({ ...s, [k.key]: v })); }} />
             </div>
           ))}
-          <p className={shared.note}>Alerts appear while Rivva is open in another tab or installed on your phone. Everything is always listed in the bell inside the app.</p>
+          <p className={shared.note}>Alerts appear while {BRAND.name} is open in another tab or installed on your phone. Everything is always listed in the bell inside the app.</p>
         </>
       )}
       {note && <p role="alert" className={shared.error}>{note}</p>}

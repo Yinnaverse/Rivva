@@ -12,7 +12,8 @@ Watch together. Even when apart. A mobile-first web app (Next.js, installable as
 6. SQL Editor → new query → paste `supabase/phase6.sql` → Run (pause the room while someone buffers).
 7. SQL Editor → new query → paste `supabase/phase7.sql` → Run (usernames, friends, room invites).
 8. SQL Editor → new query → paste `supabase/phase8.sql` → Run (notifications).
-9. Authentication → URL Configuration: Site URL = your live address; add `<your address>/**` under Redirect URLs (needed for password-reset links).
+9. SQL Editor → new query → paste `supabase/phase9.sql` → Run (profile pictures).
+10. Authentication → URL Configuration: Site URL = your live address; add `<your address>/**` under Redirect URLs (needed for password-reset links).
 
 ## Run it
     npm install
@@ -28,7 +29,8 @@ Watch together. Even when apart. A mobile-first web app (Next.js, installable as
 - Done: usernames, friend requests (accept / decline / remove), a copyable friend link, inviting friends into a room, invites shown on Home (friends need a full account, not a guest)
 - Done: forgot / reset password, change password in Settings, menu drawer, bell with unread count and a notifications page, back buttons, 404 and error pages
 - Done: in-app notifications (friend requests, accepts, invites, movie started) plus browser alerts while Rivva is open in a tab or installed app
-- Not built: alerts while Rivva is fully closed (needs a push server), avatar upload, language, streaming-service linking
+- Done: profile pictures (pick, drag/zoom crop, saved as a small 256px square, shown in rooms, chat, friends and the menu)
+- Not built: alerts while the app is fully closed (needs a push server), language, streaming-service linking
 
 - Done: uploads show live progress with Cancel, and files over 50 MB are rejected up front
 - Done: the room pauses for everyone when one person's video stalls, then resumes together (max wait 20s)
@@ -42,6 +44,9 @@ Troubleshooting: in the watch screen open the gear, then "Sync info" → Showing
 - Free Supabase plan: 50 MB per uploaded file. For longer films, upgrade and raise the limit, or paste a direct https link to an MP4/WebM instead.
 - Browsers play MP4 (H.264/AAC) and WebM. MKV and AVI usually won't play; convert them (e.g. HandBrake).
 - Netflix and other streaming apps can't be synced inside another app.
+
+## Renaming the app
+The name is one line in `src/lib/brand.ts`. Also replace `public/logo.svg` (and `public/icon.svg`), and optionally rename the Vercel project / domain and the Supabase project.
 
 ## Your real logo
 In Figma, select the "Yinnaverse" vector on the Home screen (node 366:201), export it as SVG, and save it as `public/logo.svg`. The app picks it up automatically (header and login). Until then it shows a placeholder.

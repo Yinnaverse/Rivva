@@ -13,7 +13,7 @@ import { AvatarStack } from '../Avatar';
 import { RoomChat } from './RoomChat';
 import styles from './Watch.module.css';
 
-type MemberRow = { user_id: string; profiles: { display_name: string } | null };
+type MemberRow = { user_id: string; profiles: { display_name: string; avatar_url: string | null } | null };
 type Sync = 'synced' | 'syncing' | 'offline';
 const REACTIONS = ['🔥', '😂', '😮', '❤️', '👏'];
 const HOLD_LIMIT_MS = 20000; // never keep the room waiting longer than this
@@ -118,8 +118,8 @@ export function Watch({ roomId }: { roomId: string }) {
   }, [expectedAt]);
 
   const loadMembers = useCallback(async () => {
-    const { data } = await supabase.from('room_members').select('user_id, profiles(display_name)').eq('room_id', roomId).order('joined_at');
-    setMembers(((data ?? []) as unknown as MemberRow[]).map((m) => ({ user_id: m.user_id, name: m.profiles?.display_name ?? 'Guest' })));
+    const { data } = await supabase.from('room_members').select('user_id, profiles(display_name, avatar_url)').eq('room_id', roomId).order('joined_at');
+    setMembers(((data ?? []) as unknown as MemberRow[]).map((m) => ({ user_id: m.user_id, name: m.profiles?.display_name ?? 'Guest', avatar: m.profiles?.avatar_url ?? null })));
   }, [roomId]);
 
   // Initial load
@@ -418,7 +418,7 @@ export function Watch({ roomId }: { roomId: string }) {
               <button className={styles.iconBtn} onClick={() => setSettingsOpen(true)} aria-label="Watch settings"><Settings size={24} /></button>
             </div>
           </div>
-          <AvatarStack names={members.slice(0, 6).map((m) => m.name)} />
+          <AvatarStack people={members.slice(0, 6).map((m) => ({ name: m.name, src: m.avatar }))} />
         </header>
 
         {debug && <pre className={styles.debug}>{dbg}</pre>}

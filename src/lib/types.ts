@@ -17,10 +17,10 @@ export type DbRoom = {
 
 export type RoomListItem = DbRoom & {
   host: { display_name: string } | null;
-  room_members: { user_id: string; profiles: { display_name: string } | null }[];
+  room_members: { user_id: string; profiles: { display_name: string; avatar_url: string | null } | null }[];
 };
 
-export type Member = { user_id: string; name: string };
+export type Member = { user_id: string; name: string; avatar?: string | null };
 
 export type ChatMessage = {
   id: number;

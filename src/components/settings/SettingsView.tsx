@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Download, LogOut, Monitor, Moon, Palette, Sun, Trash2 } from 'lucide-react';
 import { useAuth } from '@/lib/AuthProvider';
@@ -9,10 +9,13 @@ import { applyTheme, getThemePref, type ThemePref } from '@/lib/theme';
 import type { Video } from '@/lib/types';
 import { deleteVideo } from '@/lib/videos';
 import { Avatar } from '../Avatar';
+import { AvatarEditor } from './AvatarEditor';
+import { deleteAvatarFiles, removeAvatar, saveAvatar } from '@/lib/avatar';
 import { Button } from '../Button';
 import { FriendsSection } from './FriendsSection';
 import { NotificationsSection } from './NotificationsSection';
 import styles from './SettingsView.module.css';
+import { BRAND } from '@/lib/brand';
 
 const THEMES: { id: ThemePref; label: string; Icon: typeof Sun }[] = [
   { id: 'dark', label: 'Dark', Icon: Moon },
@@ -21,7 +24,7 @@ const THEMES: { id: ThemePref; label: string; Icon: typeof Sun }[] = [
 ];
 
 export function SettingsView() {
-  const { user, displayName, signOut } = useAuth();
+  const { user, displayName, avatarUrl, refreshProfile, signOut } = useAuth();
   const router = useRouter();
   const [name, setName] = useState(displayName);
   const [saving, setSaving] = useState(false);
@@ -31,6 +34,8 @@ export function SettingsView() {
   const [typed, setTyped] = useState('');
   const [deleting, setDeleting] = useState(false);
   const [newPw, setNewPw] = useState('');
+  const [pickedFile, setPickedFile] = useState<File | null>(null);
+  const fileInput = useRef<HTMLInputElement>(null);
   const [pwBusy, setPwBusy] = useState(false);
 
   useEffect(() => setTheme(getThemePref()), []);
@@ -56,6 +61,20 @@ export function SettingsView() {
     setPwBusy(false);
     if (error) setMessage({ kind: 'error', text: error.message });
     else { setNewPw(''); setMessage({ kind: 'ok', text: 'Password updated.' }); }
+  }
+
+  async function onSaveAvatar(blob: Blob) {
+    if (!user) return;
+    await saveAvatar(user.id, blob);
+    await refreshProfile();
+    setPickedFile(null);
+    setMessage({ kind: 'ok', text: 'Profile picture updated.' });
+  }
+
+  async function onRemoveAvatar() {
+    if (!user) return;
+    try { await removeAvatar(user.id); await refreshProfile(); setMessage({ kind: 'ok', text: 'Profile picture removed.' }); }
+    catch (e) { setMessage({ kind: 'error', text: e instanceof Error ? e.message : 'Could not remove it' }); }
   }
 
   function pickTheme(t: ThemePref) {
@@ -112,6 +131,7 @@ export function SettingsView() {
     try {
       const { data: mine } = await supabase.from('videos').select('*').eq('owner_id', user.id);
       for (const v of (mine ?? []) as Video[]) await deleteVideo(v); // removes stored files too
+      await deleteAvatarFiles(user.id);
       const { error } = await supabase.rpc('delete_my_account');
       if (error) throw new Error(error.message);
       await supabase.auth.signOut({ scope: 'local' });
@@ -137,7 +157,17 @@ export function SettingsView() {
           <div className={`${styles.input} ${styles.readonly}`}>{user?.email ?? (isGuest ? 'Guest account (no email)' : '—')}</div>
         </div>
         <div className={styles.avatarRow}>
-          <div className={styles.avatarBox}><span>Avatar</span><Avatar name={displayName} size={46} /></div>
+          <div className={styles.avatarBox}>
+            <span>Profile picture</span>
+            <div className={styles.avatarLine}>
+              <Avatar name={displayName} src={avatarUrl} size={64} />
+              <div className={styles.avatarBtns}>
+                <button type="button" className={styles.small} onClick={() => fileInput.current?.click()}>{avatarUrl ? 'Change' : 'Add picture'}</button>
+                {avatarUrl && <button type="button" className={styles.small} onClick={onRemoveAvatar}>Remove</button>}
+              </div>
+            </div>
+            <input ref={fileInput} type="file" accept="image/*" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) setPickedFile(f); e.target.value = ''; }} />
+          </div>
           <Button onClick={saveName}>{saving ? 'Saving…' : 'Save name'}</Button>
         </div>
         {!isGuest && (
@@ -147,11 +177,11 @@ export function SettingsView() {
             <Button onClick={changePassword}>{pwBusy ? 'Updating…' : 'Update password'}</Button>
           </div>
         )}
-        {isGuest && <p className={styles.note}>You’re using a guest account. It only lives on this device, so sign up to use Rivva anywhere.</p>}
+        {isGuest && <p className={styles.note}>You’re using a guest account. It only lives on this device, so sign up to use {BRAND.name} anywhere.</p>}
       </section>
 
       <section className={styles.card}>
-        <div className={styles.head}><h2><Palette size={22} /> Appearance</h2><p>Choose how Rivva looks</p></div>
+        <div className={styles.head}><h2><Palette size={22} /> Appearance</h2><p>Choose how {BRAND.name} looks</p></div>
         <div role="radiogroup" aria-label="Theme" className={styles.segment}>
           {THEMES.map(({ id, label, Icon }) => (
             <button key={id} role="radio" aria-checked={theme === id} className={`${styles.seg} ${theme === id ? styles.segOn : ''}`} onClick={() => pickTheme(id)}>
@@ -187,6 +217,8 @@ export function SettingsView() {
       {message && <p role={message.kind === 'error' ? 'alert' : 'status'} className={message.kind === 'error' ? styles.error : styles.ok}>{message.text}</p>}
 
       <button className={styles.action} onClick={logout}><LogOut size={24} /> Logout</button>
+
+      {pickedFile && <AvatarEditor file={pickedFile} onCancel={() => setPickedFile(null)} onSave={onSaveAvatar} />}
     </div>
   );
 }

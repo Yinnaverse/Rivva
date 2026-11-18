@@ -4,7 +4,7 @@ import type { DbRoom, RoomListItem } from './types';
 export async function listRooms(): Promise<RoomListItem[]> {
   const { data, error } = await supabase
     .from('rooms')
-    .select('*, host:profiles!rooms_host_id_fkey(display_name), room_members(user_id, profiles(display_name))')
+    .select('*, host:profiles!rooms_host_id_fkey(display_name), room_members(user_id, profiles(display_name, avatar_url))')
     .order('created_at', { ascending: false })
     .limit(30);
   if (error) throw new Error(error.message);

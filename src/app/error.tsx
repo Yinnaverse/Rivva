@@ -2,6 +2,7 @@
 
 import { Button } from '@/components/Button';
 import { Logo } from '@/components/Logo';
+import { BRAND } from '@/lib/brand';
 
 export default function ErrorPage({ reset }: { error: Error; reset: () => void }) {
   return (
@@ -10,7 +11,7 @@ export default function ErrorPage({ reset }: { error: Error; reset: () => void }
       <h1 style={{ fontSize: 28, fontWeight: 500 }}>Something went wrong</h1>
       <p style={{ color: 'var(--muted)' }}>Try again. If it keeps happening, go back to the home page.</p>
       <Button onClick={reset}>Try again</Button>
-      <a href="/" style={{ color: 'var(--muted)', textDecoration: 'underline' }}>Back to Rivva</a>
+      <a href="/" style={{ color: 'var(--muted)', textDecoration: 'underline' }}>Back to {BRAND.name}</a>
     </main>
   );
 }

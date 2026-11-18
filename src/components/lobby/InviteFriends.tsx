@@ -48,7 +48,7 @@ export function InviteFriends({ roomId, memberIds }: { roomId: string; memberIds
           const sent = invited.has(p.id);
           return (
             <div key={p.id} className={styles.person}>
-              <Avatar name={p.display_name} size={34} />
+              <Avatar name={p.display_name} src={p.avatar_url} size={34} />
               <div className={styles.who}><span>{p.display_name}</span><span className={styles.muted}>@{p.username}</span></div>
               {inRoom ? <span className={styles.muted}>In room</span>
                 : sent ? <span className={styles.sent}>Invited</span>

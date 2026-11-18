@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 
-export type Person = { id: string; display_name: string; username: string | null };
+export type Person = { id: string; display_name: string; username: string | null; avatar_url: string | null };
 export type Friendship = {
   id: string;
   requester_id: string;
@@ -11,7 +11,7 @@ export type Friendship = {
 };
 export type Invite = { id: string; room_id: string; room_name: string; created_at: string; inviter: { display_name: string } | null };
 
-const PERSON = 'id, display_name, username';
+const PERSON = 'id, display_name, username, avatar_url';
 
 export async function listFriendships(): Promise<Friendship[]> {
   const { data, error } = await supabase

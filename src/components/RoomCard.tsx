@@ -6,7 +6,7 @@ import styles from './RoomCard.module.css';
 
 export function RoomCard({ room, isMember, onOpen }: { room: RoomListItem; isMember: boolean; onOpen: () => void }) {
   const playing = room.status === 'playing';
-  const names = room.room_members.map((m) => m.profiles?.display_name ?? 'Guest');
+  const people = room.room_members.map((m) => ({ name: m.profiles?.display_name ?? 'Guest', src: m.profiles?.avatar_url }));
   return (
     <article className={styles.card}>
       <div className={styles.head}>
@@ -22,8 +22,8 @@ export function RoomCard({ room, isMember, onOpen }: { room: RoomListItem; isMem
       <p className={styles.muted}>Hosted by <span className={styles.host}>{room.host?.display_name ?? 'Guest'}</span></p>
       <p className={styles.now}><Clapperboard size={16} /> {room.now_playing ?? 'Unselected'}</p>
       <div className={styles.people}>
-        <AvatarStack names={names.slice(0, 5)} />
-        <span className={styles.count}><Users size={16} /> {names.length}/{room.capacity}</span>
+        <AvatarStack people={people.slice(0, 5)} />
+        <span className={styles.count}><Users size={16} /> {people.length}/{room.capacity}</span>
       </div>
       <Button full onClick={onOpen}>{isMember ? 'Open Room' : 'Join Room'}</Button>
     </article>

@@ -83,7 +83,7 @@ export function RoomChat({
             <div key={m.id} className={styles.msg}>
               <div className={styles.meta}>
                 <span className={styles.who}>
-                  <span className={styles.av}><Avatar name={m.name} size={28} /><i className={`${styles.dot} ${online.has(m.user_id) ? styles.dotOn : ''}`} /></span>
+                  <span className={styles.av}><Avatar name={m.name} src={members.find((x) => x.user_id === m.user_id)?.avatar} size={28} /><i className={`${styles.dot} ${online.has(m.user_id) ? styles.dotOn : ''}`} /></span>
                   <span style={{ color }}>{m.name}</span>
                 </span>
                 <span className={styles.time}>{timeAgo(m.created_at)}</span>

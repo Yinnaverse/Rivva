@@ -124,7 +124,7 @@ export function FriendsSection() {
             const p = otherPerson(r, me);
             return (
               <div key={r.id} className={styles.person}>
-                <Avatar name={p?.display_name ?? 'Guest'} size={38} />
+                <Avatar name={p?.display_name ?? 'Guest'} src={p?.avatar_url} size={38} />
                 <div className={styles.who}><span>{p?.display_name}</span><span className={styles.sub}>@{p?.username}</span></div>
                 <button className={styles.iconBtn} aria-label="Accept" onClick={() => act(() => respondToRequest(r.id, true))}><Check size={22} color="var(--success)" /></button>
                 <button className={styles.iconBtn} aria-label="Decline" onClick={() => act(() => respondToRequest(r.id, false))}><X size={22} /></button>
@@ -140,7 +140,7 @@ export function FriendsSection() {
             const p = otherPerson(r, me);
             return (
               <div key={r.id} className={styles.person}>
-                <Avatar name={p?.display_name ?? 'Guest'} size={38} />
+                <Avatar name={p?.display_name ?? 'Guest'} src={p?.avatar_url} size={38} />
                 <div className={styles.who}><span>{p?.display_name}</span><span className={styles.sub}>@{p?.username ?? '—'}</span></div>
                 <button className={styles.small} onClick={() => confirm(`Remove ${p?.display_name}?`) && act(() => removeFriendship(r.id))}>Remove</button>
               </div>
@@ -158,7 +158,7 @@ export function FriendsSection() {
             const p = otherPerson(r, me);
             return (
               <div key={r.id} className={styles.person}>
-                <Avatar name={p?.display_name ?? 'Guest'} size={38} />
+                <Avatar name={p?.display_name ?? 'Guest'} src={p?.avatar_url} size={38} />
                 <div className={styles.who}><span>{p?.display_name}</span><span className={styles.sub}>Waiting for them to accept</span></div>
                 <button className={styles.small} onClick={() => act(() => removeFriendship(r.id))}>Cancel</button>
               </div>

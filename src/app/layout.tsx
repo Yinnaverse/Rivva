@@ -5,10 +5,11 @@ import { AuthProvider } from '@/lib/AuthProvider';
 import { NotificationsProvider } from '@/lib/NotificationsProvider';
 import { ServiceWorkerRegister } from '@/components/ServiceWorkerRegister';
 import { THEME_BOOT_SCRIPT } from '@/lib/theme';
+import { BRAND } from '@/lib/brand';
 
 export const metadata: Metadata = {
-  title: 'Rivva',
-  description: 'Watch together. Even when apart.',
+  title: BRAND.name,
+  description: BRAND.tagline,
   manifest: '/manifest.webmanifest',
 };
 

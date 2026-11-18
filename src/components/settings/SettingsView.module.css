@@ -39,3 +39,6 @@
 .confirmRow > * { flex: 1; justify-content: center; text-align: center; }
 .error { color: #ff6b7d; }
 .ok { color: var(--success); }
+.avatarLine { display: flex; align-items: center; gap: 14px; }
+.avatarBtns { display: flex; flex-direction: column; gap: 8px; }
+.small { padding: 8px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); color: var(--text); font-size: 14px; }

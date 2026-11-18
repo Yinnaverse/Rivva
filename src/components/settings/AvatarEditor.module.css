@@ -1,0 +1,17 @@
+.overlay { position: fixed; inset: 0; z-index: 60; background: rgba(0, 0, 0, 0.7); display: flex; align-items: flex-end; justify-content: center; }
+.sheet {
+  width: 100%; max-width: 440px; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 16px 16px 0 0;
+  padding: 16px 16px calc(20px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 14px; max-height: 92dvh; overflow-y: auto;
+}
+.head { display: flex; justify-content: space-between; align-items: center; }
+.head h2 { font-size: 20px; font-weight: 500; }
+.stage { position: relative; width: 240px; height: 240px; margin: 0 auto; border-radius: 12px; overflow: hidden; background: var(--surface-2); }
+.canvas { display: block; touch-action: none; cursor: grab; }
+.ring { position: absolute; inset: 0; border-radius: 50%; box-shadow: 0 0 0 999px rgba(0, 0, 0, 0.55); pointer-events: none; border: 2px solid #fff; }
+.zoom { display: flex; align-items: center; gap: 12px; }
+.zoom input { flex: 1; accent-color: var(--accent); }
+.hint { color: var(--muted); font-size: 14px; }
+.error { color: #ff6b7d; }
+.actions { display: flex; gap: 8px; }
+.actions > * { flex: 1; }
+.cancel { padding: 16px; border: 1px solid var(--border); border-radius: var(--radius-sm); }

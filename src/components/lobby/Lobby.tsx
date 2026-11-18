@@ -15,8 +15,9 @@ import { Button } from '../Button';
 import { Toggle } from '../Toggle';
 import { InviteFriends } from './InviteFriends';
 import styles from './Lobby.module.css';
+import { BRAND } from '@/lib/brand';
 
-type MemberRow = { user_id: string; profiles: { display_name: string } | null };
+type MemberRow = { user_id: string; profiles: { display_name: string; avatar_url: string | null } | null };
 type MessageRow = { id: number; user_id: string; body: string; created_at: string };
 
 export function Lobby({ roomId }: { roomId: string }) {
@@ -41,12 +42,13 @@ export function Lobby({ roomId }: { roomId: string }) {
   const loadMembers = useCallback(async () => {
     const { data } = await supabase
       .from('room_members')
-      .select('user_id, profiles(display_name)')
+      .select('user_id, profiles(display_name, avatar_url)')
       .eq('room_id', roomId)
       .order('joined_at');
     const list = ((data ?? []) as unknown as MemberRow[]).map((m) => ({
       user_id: m.user_id,
       name: m.profiles?.display_name ?? 'Guest',
+      avatar: m.profiles?.avatar_url ?? null,
     }));
     membersRef.current = list;
     setMembers(list);
@@ -147,9 +149,9 @@ export function Lobby({ roomId }: { roomId: string }) {
   async function share() {
     if (!room) return;
     const url = `${window.location.origin}/rooms/join?code=${room.code}`;
-    const text = `Join my Rivva room “${room.name}” with code ${room.code}`;
+    const text = `Join my ${BRAND.name} room “${room.name}” with code ${room.code}`;
     try {
-      if (navigator.share) await navigator.share({ title: 'Rivva', text, url });
+      if (navigator.share) await navigator.share({ title: BRAND.name, text, url });
       else { await navigator.clipboard.writeText(`${text} ${url}`); setCopied(true); setTimeout(() => setCopied(false), 1500); }
     } catch { /* share sheet dismissed */ }
   }
@@ -255,7 +257,7 @@ export function Lobby({ roomId }: { roomId: string }) {
           return (
             <div key={m.user_id} className={styles.member}>
               <span className={styles.avatarWrap}>
-                <Avatar name={m.name} size={30} />
+                <Avatar name={m.name} src={m.avatar} size={30} />
                 <span className={`${styles.dot} ${isOnline ? styles.dotOn : ''}`} />
               </span>
               <div className={styles.memberBody}>

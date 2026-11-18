@@ -9,6 +9,7 @@ import { useNotifications } from '@/lib/NotificationsProvider';
 import { Avatar } from './Avatar';
 import { Logo } from './Logo';
 import styles from './AppHeader.module.css';
+import { BRAND } from '@/lib/brand';
 
 const LINKS = [
   { href: '/', label: 'Home', Icon: Home },
@@ -19,7 +20,7 @@ const LINKS = [
 ];
 
 export function AppHeader() {
-  const { user, displayName, signOut } = useAuth();
+  const { user, displayName, avatarUrl, signOut } = useAuth();
   const { unread } = useNotifications();
   const pathname = usePathname();
   const router = useRouter();
@@ -42,7 +43,7 @@ export function AppHeader() {
   return (
     <>
       <header className={styles.header}>
-        <Link href="/" aria-label="Rivva home"><Logo /></Link>
+        <Link href="/" aria-label={`${BRAND.name} home`}><Logo /></Link>
         <div className={styles.actions}>
           <Link href="/notifications" className={styles.iconBtn} aria-label={unread ? `Notifications, ${unread} unread` : 'Notifications'}>
             <Bell size={26} />
@@ -59,7 +60,7 @@ export function AppHeader() {
           <nav className={styles.drawer} role="dialog" aria-label="Menu" onClick={(e) => e.stopPropagation()}>
             <div className={styles.drawerHead}>
               <div className={styles.who}>
-                <Avatar name={displayName} size={40} />
+                <Avatar name={displayName} src={avatarUrl} size={40} />
                 <div><strong>{displayName}</strong><span>{user?.is_anonymous ? 'Guest account' : user?.email}</span></div>
               </div>
               <button type="button" className={styles.iconBtn} aria-label="Close menu" onClick={() => setOpen(false)}><X size={26} /></button>

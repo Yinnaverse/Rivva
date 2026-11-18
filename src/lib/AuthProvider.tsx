@@ -11,6 +11,8 @@ type AuthContextValue = {
   user: User | null;
   loading: boolean;
   displayName: string;
+  avatarUrl: string | null;
+  refreshProfile: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<AuthResult>;
   signUp: (name: string, email: string, password: string) => Promise<AuthResult>;
   signInAsGuest: () => Promise<AuthResult>;
@@ -22,6 +24,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -48,6 +51,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error: error?.message ?? null };
   }, []);
 
+  const userId = session?.user?.id;
+  const refreshProfile = useCallback(async () => {
+    if (!userId) { setAvatarUrl(null); return; }
+    const { data } = await supabase.from('profiles').select('avatar_url').eq('id', userId).maybeSingle();
+    setAvatarUrl((data?.avatar_url as string | null | undefined) ?? null);
+  }, [userId]);
+  useEffect(() => { refreshProfile(); }, [refreshProfile]);
+
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
   }, []);
@@ -56,8 +67,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const user = session?.user ?? null;
     const meta = user?.user_metadata?.name as string | undefined;
     const displayName = meta?.trim() || user?.email?.split('@')[0] || 'Guest';
-    return { session, user, loading, displayName, signIn, signUp, signInAsGuest, signOut };
-  }, [session, loading, signIn, signUp, signInAsGuest, signOut]);
+    return { session, user, loading, displayName, avatarUrl, refreshProfile, signIn, signUp, signInAsGuest, signOut };
+  }, [session, loading, avatarUrl, refreshProfile, signIn, signUp, signInAsGuest, signOut]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
