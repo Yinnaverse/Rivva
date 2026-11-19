@@ -1,4 +1,5 @@
 import { HomeActions } from '@/components/HomeActions';
+import { InstallBanner } from '@/components/InstallBanner';
 import { RoomInvites } from '@/components/RoomInvites';
 import { RoomList } from '@/components/RoomList';
 import { VideoList } from '@/components/VideoList';
@@ -8,6 +9,7 @@ export default function HomePage() {
   return (
     <>
       <RoomInvites />
+      <InstallBanner />
       <HomeActions />
 
       <section className={styles.section}>

@@ -13,7 +13,7 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!loading && !session) {
       const next = encodeURIComponent(pathname + (search ? `?${search}` : ''));
-      router.replace(`/login?next=${next}`);
+      router.replace(pathname === '/' ? '/welcome' : `/login?next=${next}`); // first-time visitors see the landing page
     }
   }, [loading, session, router, pathname, search]);
 

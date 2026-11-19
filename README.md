@@ -30,6 +30,8 @@ Watch together. Even when apart. A mobile-first web app (Next.js, installable as
 - Done: forgot / reset password, change password in Settings, menu drawer, bell with unread count and a notifications page, back buttons, 404 and error pages
 - Done: in-app notifications (friend requests, accepts, invites, movie started) plus browser alerts while Rivva is open in a tab or installed app
 - Done: profile pictures (pick, drag/zoom crop, saved as a small 256px square, shown in rooms, chat, friends and the menu)
+- Done: landing page at /welcome (first stop for signed-out visitors) with a device-aware add-to-home-screen guide, a native install button on Chrome/Edge, and a dismissible install nudge inside the app on phones
+- Done: proper install icons (192, 512, maskable, apple-touch) and manifest; replace them when the final logo is chosen
 - Not built: alerts while the app is fully closed (needs a push server), language, streaming-service linking
 
 - Done: uploads show live progress with Cancel, and files over 50 MB are rejected up front

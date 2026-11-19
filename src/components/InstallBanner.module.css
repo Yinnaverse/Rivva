@@ -1,0 +1,4 @@
+.banner { display: flex; align-items: center; gap: 10px; margin-top: 8px; padding: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); font-size: 14px; line-height: 1.4; }
+.banner p { flex: 1; }
+.banner a { color: var(--accent); text-decoration: underline; }
+.banner button { padding: 4px; color: var(--muted); }

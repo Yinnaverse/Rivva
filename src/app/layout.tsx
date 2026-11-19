@@ -11,6 +11,8 @@ export const metadata: Metadata = {
   title: BRAND.name,
   description: BRAND.tagline,
   manifest: '/manifest.webmanifest',
+  icons: { icon: '/icon.svg', apple: '/apple-touch-icon.png' },
+  appleWebApp: { capable: true, title: BRAND.name, statusBarStyle: 'black-translucent' },
 };
 
 export const viewport: Viewport = {

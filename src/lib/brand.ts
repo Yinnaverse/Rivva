@@ -2,4 +2,5 @@
 export const BRAND = {
   name: 'Rivva',
   tagline: 'Watch together. Even when apart.',
+  studio: 'Yinnaverse',
 };
